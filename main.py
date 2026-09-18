@@ -1,9 +1,9 @@
 import sys
 from typing import List
 from dijkstra import Pathfinder
+from graph import TerminalColors
 from parsing import MapParser, ParsingError
 from simulation import SimulationEngine
-from graph import TerminalColors
 
 
 def main() -> None:
@@ -25,24 +25,42 @@ def main() -> None:
         sys.exit(1)
 
     pathfinder = Pathfinder(graph)
-    path = pathfinder.find_shortest_path(graph.start_hub, graph.end_hub)
+    available_paths = pathfinder.find_multiple_paths(
+        graph.start_hub, graph.end_hub, max_paths=5
+    )
 
-    if not path:
-        print("Error: No valid path found between start_hub and end_hub.")
-        sys.exit(1)
+    if not available_paths:
+        print("Error: No valid path found from start to end.")
+        sys.exit(1)  # دابا راه فـ داخل الـ if
 
-    sim = SimulationEngine(graph=graph, nb_drones=nb_drones, path_names=path)
+    drone_paths = pathfinder.assign_paths_to_drones(available_paths, nb_drones)
+
+    # 3. تشغيل المحاكاة واستعمال drone_paths بدلاً من path_names
+    sim = SimulationEngine(
+        graph=graph, nb_drones=nb_drones, drone_paths=drone_paths
+    )
 
     while not sim.is_simulation_complete():
         moves = sim.step()
 
         turn_output: List[str] = []
         for drone_name, zone_name in moves.items():
-            # Get zone color from graph metadata
-            zone_color = graph.zones[zone_name].color \
-                if zone_name in graph.zones else "none"
+            # التعامل مع الانتقال بين منطقتين (zone1-zone2 فـ RestrictedZone)
+            if "-" in zone_name:
+                parts = zone_name.split("-")
+                colored_parts = []
+                for p in parts:
+                    z_color = graph.zones[p].color if p in graph.zones else "none"
+                    colored_parts.append(TerminalColors.colorize(p, z_color))
+                colored_zone = "-".join(colored_parts)
+            else:
+                zone_color = (
+                    graph.zones[zone_name].color
+                    if zone_name in graph.zones
+                    else "none"
+                )
+                colored_zone = TerminalColors.colorize(zone_name, zone_color)
 
-            colored_zone = TerminalColors.colorize(zone_name, zone_color)
             turn_output.append(f"{drone_name}-{colored_zone}")
 
         if turn_output:

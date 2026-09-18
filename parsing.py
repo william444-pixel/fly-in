@@ -37,6 +37,7 @@ class MapParser:
         self.file_path: Path = Path(file_path)
         self.nb_drones: int = 0
         self.seen_connections: Set[Tuple[str, str]] = set()
+        self.seen_coordinates: Set[Tuple[int, int]] = set()
 
     def parse(self) -> Tuple[Graph, int]:
         """Parse the input file and return a Graph object
@@ -96,7 +97,6 @@ class MapParser:
             elif line.startswith("connection:"):
                 conn = self._parse_connection_line(line, idx, graph.zones)
                 graph.add_connection(conn)
-
             else:
                 raise ParsingError(
                     idx, f"Unknown syntax line format: '{line}'")
@@ -106,7 +106,7 @@ class MapParser:
             raise ParsingError(len(lines), "Missing mandatory 'start_hub'")
         if not has_end:
             raise ParsingError(len(lines), "Missing mandatory 'end_hub'")
-
+        self._check_isolated_zones(graph, len(lines))
         return graph, self.nb_drones
 
     def _clean_line(self, line: str) -> str:
@@ -154,7 +154,12 @@ class MapParser:
 
         color = metadata.get("color", "none")
         zone_type = metadata.get("zone", "normal")
-
+        coords = (x, y)
+        if coords in self.seen_coordinates:
+            raise ParsingError(
+                line_num, f"Duplicate coordinates {coords} detected for zone '{name}'"
+            )
+        self.seen_coordinates.add(coords)
         try:
             max_drones = int(metadata.get("max_drones", 1))
             if max_drones <= 0:
@@ -253,3 +258,12 @@ class MapParser:
             main_part = line.strip()
 
         return main_part, metadata
+    def _check_isolated_zones(self, graph: Graph, line_num: int) -> None:
+        """Ensure every zone in the graph is connected to at least one connection."""
+        for zone_name, zone in graph.zones.items():
+            neighbors = graph.get_neighbors(zone)
+            if len(neighbors) == 0:
+                raise ParsingError(
+                    line_num,
+                    f"Disconnected graph: Zone '{zone_name}' is completely isolated (has no connections)."
+                )

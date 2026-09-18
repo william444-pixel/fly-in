@@ -1,3 +1,4 @@
+
 import heapq
 from typing import Dict, List, Optional, Set, Tuple
 from graph import BlockedZone, Graph, Zone
@@ -6,75 +7,103 @@ from graph import BlockedZone, Graph, Zone
 class Pathfinder:
 
     def __init__(self, graph: Graph) -> None:
-        """Initialize the Pathfinder with a graph instance."""
         self.graph = graph
 
-    def find_shortest_path(
-        self, start_zone: Zone, end_zone: Zone
-    ) -> Optional[List[str]]:
-        """Find the shortest path between start_zone
-          and end_zone using Dijkstra's algorithm.
+    def find_multiple_paths(
+        self, start_zone: Zone, end_zone: Zone, max_paths: int = 5
+    ) -> List[List[str]]:
+        """ترجع قائمة فيها المسارات القيرة المختلفة بين البدية والنهاية"""
+        first_path = self._dijkstra(start_zone.name, end_zone.name, excluded_edges=set())
+        if not first_path:
+            return []
 
-        Returns a list of zone names representing the path, or None if no path
-        exists.
-        """
-        # 1. Initialization
-        distances: Dict[str, float] = {start_zone.name: 0.0}
-        previous: Dict[str, Optional[str]] = {start_zone.name: None}
-        pq: List[Tuple[float, str]] = [(0.0, start_zone.name)]
+        paths: List[List[str]] = [first_path]
 
-        # Track visited zones to avoid reprocessing nodes
-        visited: Set[str] = set()
-
-        # 2. Main Dijkstra Loop
-        while pq:
-            current_cost, current_name = heapq.heappop(pq)
-
-            # Target reached: optimal path found
-            if current_name == end_zone.name:
+        # نلقاو مسارات بديلة عن طريق إخفاء بعض الروابط
+        for i in range(len(first_path) - 1):
+            if len(paths) >= max_paths:
                 break
+            
+            excluded = {(first_path[i], first_path[i + 1])}
+            alt_path = self._dijkstra(start_zone.name, end_zone.name, excluded_edges=excluded)
+            
+            if alt_path and alt_path not in paths:
+                paths.append(alt_path)
 
-            # Skip processing if node has already been visited
-            if current_name in visited:
+        return paths
+
+    def _dijkstra(
+        self, start_name: str, end_name: str, excluded_edges: Set[Tuple[str, str]]
+    ) -> Optional[List[str]]:
+        distances: Dict[str, float] = {name: float("inf") for name in self.graph.zones}
+        previous: Dict[str, Optional[str]] = {name: None for name in self.graph.zones}
+
+        distances[start_name] = 0.0
+        pq: List[Tuple[float, str]] = [(0.0, start_name)]
+
+        while pq:
+            current_dist, current_name = heapq.heappop(pq)
+
+            if current_dist > distances[current_name]:
                 continue
 
-            # Mark current zone as visited
-            visited.add(current_name)
+            if current_name == end_name:
+                break
 
-            # Explore all connections/neighbors of current_name
-            for neighbor_zone, connection in self.graph.get_neighbors(
-                self.graph.zones[current_name]
-            ):
+            current_zone = self.graph.zones[current_name]
+
+            for neighbor_zone, conn in self.graph.get_neighbors(current_zone):
                 neighbor_name = neighbor_zone.name
 
-                # Skip neighbors that are already fully processed
-                if neighbor_name in visited:
+                if (current_name, neighbor_name) in excluded_edges:
                     continue
 
-                # Ignore blocked zones completely
-                if isinstance(neighbor_zone, BlockedZone):
+                if isinstance(neighbor_zone, BlockedZone) or getattr(neighbor_zone, 'color', '') == 'black':
                     continue
 
-                # Calculate cumulative step cost using get_travel_cost()
-                step_cost = neighbor_zone.get_travel_cost()
-                new_cost = current_cost + step_cost
+                step_cost = float(neighbor_zone.get_travel_cost())
+                new_dist = current_dist + step_cost
 
-                # Relaxation step: update shortest known distance
-                if new_cost < distances.get(neighbor_name, float("inf")):
-                    distances[neighbor_name] = new_cost
+                if new_dist < distances.get(neighbor_name, float("inf")):
+                    distances[neighbor_name] = new_dist
                     previous[neighbor_name] = current_name
-                    heapq.heappush(pq, (new_cost, neighbor_name))
+                    heapq.heappush(pq, (new_dist, neighbor_name))
 
-        # 3. Path Reconstruction
-        if end_zone.name not in previous:
-            return None  # Target unreachable
+        if end_name not in previous or (previous[end_name] is None and start_name != end_name):
+            return None
 
         path: List[str] = []
-        curr: Optional[str] = end_zone.name
+        curr: Optional[str] = end_name
         while curr is not None:
             path.append(curr)
             curr = previous[curr]
 
-        # Reverse path to get [start_zone -> ... -> end_zone] order
         path.reverse()
         return path
+    def assign_paths_to_drones(
+        self, paths: List[List[str]], nb_drones: int
+        ) -> Dict[int, List[str]]:
+        """توزيع الطيارات على المسارات المتوفرة بشكل متوازن"""
+        drone_assignments: Dict[int, List[str]] = {}
+        if not paths:
+            return drone_assignments
+
+        path_costs = [len(p) for p in paths]
+        drone_counts = [0] * len(paths)
+
+        for drone_id in range(1, nb_drones + 1):
+            # نختاروا أسرع مسار بالنظر لعدد الطيارات اللي تخصصوا ليه من قبل
+            best_idx = 0
+            best_score = float("inf")
+
+            for idx, path in enumerate(paths):
+                # التكلفة = طول المسار + الزحام المرتقب
+                score = path_costs[idx] + (drone_counts[idx] * 1.5)
+                if score < best_score:
+                    best_score = score
+                    best_idx = idx
+
+            drone_assignments[drone_id] = paths[best_idx]
+            drone_counts[best_idx] += 1
+
+        return drone_assignments
