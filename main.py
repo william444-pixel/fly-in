@@ -39,9 +39,9 @@ def main() -> None:
         turn_output: List[str] = []
         for drone_name, zone_name in moves.items():
             # Get zone color from graph metadata
-            zone_color = graph.zones[zone_name].color if zone_name in graph.zones else "none"
-            
-            # Format zone name with ANSI colors (using default if color is missing)
+            zone_color = graph.zones[zone_name].color \
+                if zone_name in graph.zones else "none"
+
             colored_zone = TerminalColors.colorize(zone_name, zone_color)
             turn_output.append(f"{drone_name}-{colored_zone}")
 

@@ -6,7 +6,7 @@ Handles errors with clear feedback on line number and root cause.
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Set, Tuple
 
 from graph import (
     BlockedZone,
@@ -39,7 +39,8 @@ class MapParser:
         self.seen_connections: Set[Tuple[str, str]] = set()
 
     def parse(self) -> Tuple[Graph, int]:
-        """Parse the input file and return a Graph object and total drones count.
+        """Parse the input file and return a Graph object
+          and total drones count.
 
         Raises:
             ParsingError: If any formatting or constraint violation occurs.
@@ -65,19 +66,22 @@ class MapParser:
                     continue
                 else:
                     raise ParsingError(
-                        idx, "First non-empty line must define 'nb_drones: <number>'"
+                        idx, "First non-empty line must define /"
+                        "'nb_drones: <number>'"
                     )
 
             if line.startswith("start_hub:"):
                 if has_start:
-                    raise ParsingError(idx, "Multiple start_hub definitions found")
+                    raise ParsingError(
+                        idx, "Multiple start_hub definitions found")
                 zone = self._parse_zone_line(line, idx, zone_kind="start")
                 graph.add_zone(zone)
                 has_start = True
 
             elif line.startswith("end_hub:"):
                 if has_end:
-                    raise ParsingError(idx, "Multiple end_hub definitions found")
+                    raise ParsingError(
+                        idx, "Multiple end_hub definitions found")
                 zone = self._parse_zone_line(line, idx, zone_kind="end")
                 graph.add_zone(zone)
                 has_end = True
@@ -85,7 +89,8 @@ class MapParser:
             elif line.startswith("hub:"):
                 zone = self._parse_zone_line(line, idx, zone_kind="normal")
                 if zone.name in graph.zones:
-                    raise ParsingError(idx, f"Duplicate zone name '{zone.name}'")
+                    raise ParsingError(
+                        idx, f"Duplicate zone name '{zone.name}'")
                 graph.add_zone(zone)
 
             elif line.startswith("connection:"):
@@ -93,7 +98,8 @@ class MapParser:
                 graph.add_connection(conn)
 
             else:
-                raise ParsingError(idx, f"Unknown syntax line format: '{line}'")
+                raise ParsingError(
+                    idx, f"Unknown syntax line format: '{line}'")
 
         # Final Graph Validation
         if not has_start:
@@ -119,51 +125,32 @@ class MapParser:
             return val
         except ValueError:
             raise ParsingError(
-                line_num, "nb_drones must be a positive non-zero integer"
+                line_num, "nb_drones must be a \
+                    positive non-zero integer"
             )
 
-    def _extract_metadata(self, line: str) -> Tuple[str, Dict[str, str]]:
-        """Extract main segment and metadata key-values inside [] brackets."""
-        bracket_match = re.search(r"\[(.*?)\]", line)
-        metadata: Dict[str, str] = {}
-
-        if bracket_match:
-            meta_str = bracket_match.group(1)
-            main_part = line[: bracket_match.start()].strip()
-            # Parse key=value or standalone tags
-            for token in meta_str.split():
-                if "=" in token:
-                    k, v = token.split("=", 1)
-                    metadata[k.strip()] = v.strip()
-                elif token in ("normal", "blocked", "restricted", "priority"):
-                    metadata["zone"] = token
-                else:
-                    metadata[token] = "true"
-        else:
-            main_part = line.strip()
-
-        return main_part, metadata
-
-    def _parse_zone_line(self, line: str, line_num: int, zone_kind: str) -> Zone:
-        main_part, metadata = self._extract_metadata(line)
+    def _parse_zone_line(self, line: str, line_num: int,
+                         zone_kind: str) -> Zone:
+        main_part, metadata = self._extract_metadata(line_num, line)
         tokens = main_part.split()
 
         if len(tokens) < 4:
             raise ParsingError(
-                line_num, f"Invalid zone definition format: '{line}'"
-            )
+                line_num, f"Invalid zone definition format: '{line}'")
 
         name = tokens[1]
         if "-" in name or " " in name:
             raise ParsingError(
-                line_num, f"Zone name '{name}' contains forbidden '-' or spaces"
+                line_num, f"Zone name '{name}'\
+                contains forbidden '-' or spaces"
             )
 
         try:
             x = int(tokens[2])
             y = int(tokens[3])
         except ValueError:
-            raise ParsingError(line_num, "Zone coordinates x and y must be integers")
+            raise ParsingError(
+                line_num, "Zone coordinates x and y must be integers")
 
         color = metadata.get("color", "none")
         zone_type = metadata.get("zone", "normal")
@@ -173,7 +160,8 @@ class MapParser:
             if max_drones <= 0:
                 raise ValueError()
         except ValueError:
-            raise ParsingError(line_num, "max_drones must be a positive integer")
+            raise ParsingError(
+                line_num, "max_drones must be a positive integer")
 
         if zone_kind == "start":
             return StartZone(name, x, y, color=color)
@@ -185,19 +173,21 @@ class MapParser:
         elif zone_type == "priority":
             return PriorityZone(name, x, y, color=color, max_drones=max_drones)
         elif zone_type == "restricted":
-            return RestrictedZone(name, x, y, color=color, max_drones=max_drones)
+            return RestrictedZone(name, x, y, color=color,
+                                  max_drones=max_drones)
         elif zone_type == "blocked":
             return BlockedZone(name, x, y, color=color, max_drones=max_drones)
         else:
             raise ParsingError(
                 line_num,
-                f"Unknown zone type '{zone_type}'. Allowed: normal, priority, restricted, blocked",
+                f"Unknown zone type '{zone_type}'. \
+                    Allowed: normal, priority, restricted, blocked",
             )
 
     def _parse_connection_line(
         self, line: str, line_num: int, zones: Dict[str, Zone]
     ) -> Connection:
-        main_part, metadata = self._extract_metadata(line)
+        main_part, metadata = self._extract_metadata(line_num, line)
         tokens = main_part.split()
 
         if len(tokens) < 2:
@@ -206,8 +196,7 @@ class MapParser:
         conn_str = tokens[1]
         if "-" not in conn_str:
             raise ParsingError(
-                line_num, "Connection syntax must be 'zone1-zone2'"
-            )
+                line_num, "Connection syntax must be 'zone1-zone2'")
 
         z1_name, z2_name = conn_str.split("-", 1)
 
@@ -220,11 +209,12 @@ class MapParser:
                 line_num, f"Connection references unknown zone '{z2_name}'"
             )
 
-        # Check for duplicated bidirectional connection
         pair = (min(z1_name, z2_name), max(z1_name, z2_name))
         if pair in self.seen_connections:
             raise ParsingError(
-                line_num, f"Duplicate connection detected between {z1_name} and {z2_name}"
+                line_num,
+                f"Duplicate connection detected\
+                 between {z1_name} and {z2_name}",
             )
         self.seen_connections.add(pair)
 
@@ -234,7 +224,32 @@ class MapParser:
                 raise ValueError()
         except ValueError:
             raise ParsingError(
-                line_num, "max_link_capacity must be a positive integer"
-            )
+                line_num, "max_link_capacity must be a positive integer")
 
-        return Connection(zones[z1_name], zones[z2_name], max_link_capacity=max_capacity)
+        return Connection(
+            zones[z1_name], zones[z2_name], max_link_capacity=max_capacity
+        )
+
+    def _extract_metadata(self, line_num: int,
+                          line: str) -> Tuple[str, Dict[str, str]]:
+        """Extract main segment and metadata key-values inside [] brackets."""
+        bracket_match = re.search(r"\[(.*?)\]", line)
+        metadata: Dict[str, str] = {}
+
+        if bracket_match:
+            meta_str = bracket_match.group(1)
+            main_part = line[: bracket_match.start()].strip()
+            for token in meta_str.split():
+                if "=" in token:
+                    k, v = token.split("=", 1)
+                    metadata[k.strip()] = v.strip()
+                elif token in ("normal", "blocked", "restricted", "priority"):
+                    metadata["zone"] = token
+                else:
+                    raise ParsingError(
+                       line_num, f"Unknown metadata\
+                          tag or attribute: '{token}'")
+        else:
+            main_part = line.strip()
+
+        return main_part, metadata

@@ -111,7 +111,8 @@ class EndZone(Zone):
 
 
 class Connection:
-    """Represents a bidirectional edge between two zones with capacity limits."""
+    """Represents a bidirectional edge
+      between two zones with capacity limits."""
 
     def __init__(
         self,
@@ -133,7 +134,8 @@ class Connection:
         raise ValueError(f"Zone {zone.name} is not part of this connection")
 
     def can_traverse(self) -> bool:
-        """Check if connection has capacity for another traversal in current turn."""
+        """Check if connection has capacity
+        for another traversal in current turn."""
         return self.current_traversals < self.max_link_capacity
 
     def reset_turn(self) -> None:
@@ -175,6 +177,7 @@ class Graph:
         """Retrieve reachable adjacent zones and their connecting edge."""
         return self.adj_list.get(zone.name, [])
 
+
 class TerminalColors:
     """ANSI color codes for extensive terminal output visualization."""
     RESET = "\033[0m"
@@ -184,7 +187,6 @@ class TerminalColors:
     # Default color for zones with missing or unspecified color
     DEFAULT_COLOR = "\033[96m"  # Bright Cyan
 
-    # Full color mapping including standard, 256-color palette, and custom map colors
     COLORS = {
         # Standard basic colors
         "red": "\033[91m",
@@ -196,14 +198,10 @@ class TerminalColors:
         "white": "\033[97m",
         "gray": "\033[90m",
         "black": "\033[30;1m",
-        
-        # Extended 256-color palette
         "orange": "\033[38;5;208m",
         "purple": "\033[38;5;129m",
         "pink": "\033[38;5;206m",
         "brown": "\033[38;5;130m",
-        
-        # Specific colors for Challenger Map
         "maroon": "\033[38;5;88m",
         "gold": "\033[38;5;220m",
         "darkred": "\033[38;5;52m",
@@ -213,7 +211,8 @@ class TerminalColors:
 
     @classmethod
     def colorize(cls, text: str, color_name: str) -> str:
-        """Wrap text with ANSI color codes based on color name, fallback to DEFAULT_COLOR."""
+        """Wrap text with ANSI color
+        codes based on color name, fallback to DEFAULT_COLOR."""
         if not color_name or color_name.lower() in ("none", "null", ""):
             return f"{cls.DEFAULT_COLOR}{cls.BOLD}{text}{cls.RESET}"
 

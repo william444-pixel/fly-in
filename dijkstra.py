@@ -12,7 +12,8 @@ class Pathfinder:
     def find_shortest_path(
         self, start_zone: Zone, end_zone: Zone
     ) -> Optional[List[str]]:
-        """Find the shortest path between start_zone and end_zone using Dijkstra's algorithm.
+        """Find the shortest path between start_zone
+          and end_zone using Dijkstra's algorithm.
 
         Returns a list of zone names representing the path, or None if no path
         exists.
