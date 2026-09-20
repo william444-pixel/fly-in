@@ -26,16 +26,15 @@ def main() -> None:
 
     pathfinder = Pathfinder(graph)
     available_paths = pathfinder.find_multiple_paths(
-        graph.start_hub, graph.end_hub, max_paths=5
+        graph.start_hub, graph.end_hub, max_paths=3
     )
 
     if not available_paths:
         print("Error: No valid path found from start to end.")
-        sys.exit(1)  # دابا راه فـ داخل الـ if
+        sys.exit(1)
 
     drone_paths = pathfinder.assign_paths_to_drones(available_paths, nb_drones)
 
-    # 3. تشغيل المحاكاة واستعمال drone_paths بدلاً من path_names
     sim = SimulationEngine(
         graph=graph, nb_drones=nb_drones, drone_paths=drone_paths
     )
@@ -45,12 +44,12 @@ def main() -> None:
 
         turn_output: List[str] = []
         for drone_name, zone_name in moves.items():
-            # التعامل مع الانتقال بين منطقتين (zone1-zone2 فـ RestrictedZone)
             if "-" in zone_name:
                 parts = zone_name.split("-")
                 colored_parts = []
                 for p in parts:
-                    z_color = graph.zones[p].color if p in graph.zones else "none"
+                    z_color = graph.zones[p].color if p\
+                        in graph.zones else "none"
                     colored_parts.append(TerminalColors.colorize(p, z_color))
                 colored_zone = "-".join(colored_parts)
             else:

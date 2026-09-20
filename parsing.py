@@ -157,7 +157,8 @@ class MapParser:
         coords = (x, y)
         if coords in self.seen_coordinates:
             raise ParsingError(
-                line_num, f"Duplicate coordinates {coords} detected for zone '{name}'"
+                line_num, f"Duplicate coordinates {coords} \
+                    detected for zone '{name}'"
             )
         self.seen_coordinates.add(coords)
         try:
@@ -258,12 +259,15 @@ class MapParser:
             main_part = line.strip()
 
         return main_part, metadata
+
     def _check_isolated_zones(self, graph: Graph, line_num: int) -> None:
-        """Ensure every zone in the graph is connected to at least one connection."""
+        """Ensure every zone in the graph
+        is connected to at least one connection."""
         for zone_name, zone in graph.zones.items():
             neighbors = graph.get_neighbors(zone)
             if len(neighbors) == 0:
                 raise ParsingError(
                     line_num,
-                    f"Disconnected graph: Zone '{zone_name}' is completely isolated (has no connections)."
+                    f"Disconnected graph: Zone '{zone_name}' \
+                        is completely isolated (has no connections)."
                 )

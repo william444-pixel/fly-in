@@ -51,7 +51,7 @@ class Zone(ABC):
             self.occupants.remove(drone)
 
     @abstractmethod
-    def get_travel_cost(self) -> int:
+    def get_travel_cost(self) -> int | float:
         """Return movement cost in turns to enter this zone."""
         pass
 
@@ -69,8 +69,8 @@ class NormalZone(Zone):
 class PriorityZone(Zone):
     """Priority zone with 1 turn cost, prioritized in pathfinding."""
 
-    def get_travel_cost(self) -> int:
-        return 1
+    def get_travel_cost(self) -> float:
+        return 0.5
 
 
 class RestrictedZone(Zone):
@@ -87,7 +87,7 @@ class BlockedZone(Zone):
         return False
 
     def get_travel_cost(self) -> int:
-        return 999999  # Infinite cost representation
+        return 999999
 
 
 class StartZone(Zone):
@@ -184,7 +184,6 @@ class TerminalColors:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
 
-    # Default color for zones with missing or unspecified color
     DEFAULT_COLOR = "\033[96m"  # Bright Cyan
 
     COLORS = {
