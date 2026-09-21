@@ -74,7 +74,7 @@ class MapParser:
             if line.startswith("start_hub:"):
                 if has_start:
                     raise ParsingError(
-                        idx, "Multiple start_hub definitions found")
+                        idx, "Multiple start_hub found")
                 zone = self._parse_zone_line(line, idx, zone_kind="start")
                 graph.add_zone(zone)
                 has_start = True
@@ -82,7 +82,7 @@ class MapParser:
             elif line.startswith("end_hub:"):
                 if has_end:
                     raise ParsingError(
-                        idx, "Multiple end_hub definitions found")
+                        idx, "Multiple end_hub")
                 zone = self._parse_zone_line(line, idx, zone_kind="end")
                 graph.add_zone(zone)
                 has_end = True
@@ -101,7 +101,6 @@ class MapParser:
                 raise ParsingError(
                     idx, f"Unknown syntax line format: '{line}'")
 
-        # Final Graph Validation
         if not has_start:
             raise ParsingError(len(lines), "Missing mandatory 'start_hub'")
         if not has_end:
@@ -126,7 +125,7 @@ class MapParser:
         except ValueError:
             raise ParsingError(
                 line_num, "nb_drones must be a \
-                    positive non-zero integer"
+positive non-zero integer"
             )
 
     def _parse_zone_line(self, line: str, line_num: int,
@@ -158,7 +157,7 @@ class MapParser:
         if coords in self.seen_coordinates:
             raise ParsingError(
                 line_num, f"Duplicate coordinates {coords} \
-                    detected for zone '{name}'"
+for zone '{name}'"
             )
         self.seen_coordinates.add(coords)
         try:
@@ -184,11 +183,7 @@ class MapParser:
         elif zone_type == "blocked":
             return BlockedZone(name, x, y, color=color, max_drones=max_drones)
         else:
-            raise ParsingError(
-                line_num,
-                f"Unknown zone type '{zone_type}'. \
-                    Allowed: normal, priority, restricted, blocked",
-            )
+            raise ParsingError(f"{line_num},Unknown zone type '{zone_type}'.")
 
     def _parse_connection_line(
         self, line: str, line_num: int, zones: Dict[str, Zone]

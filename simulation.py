@@ -20,11 +20,9 @@ class SimulationEngine:
                 for name in path_names
                 if name in self.graph.zones
             ]
-
         self.drones: List[Drone] = []
         self.drone_path_indices: Dict[int, int] = {}
         self.current_time_step: int = 0
-
         for drone_id in range(1, nb_drones + 1):
             drone = Drone(drone_id=drone_id)
             self.drones.append(drone)
@@ -43,7 +41,6 @@ class SimulationEngine:
     def step(self) -> Dict[str, str]:
         self.current_time_step += 1
         step_log: Dict[str, str] = {}
-
         for connection in self.graph.connections:
             connection.reset_turn()
 
@@ -68,11 +65,9 @@ class SimulationEngine:
 
             end_zone = path[-1]
 
-            # Handling Drones already in Restricted Zone Transit
             if drone.transit_turns_left > 0:
                 drone.transit_turns_left -= 1
                 if drone.transit_turns_left == 0 and drone.target_zone:
-                    # Transit finished: move to target_zone
                     if drone.current_zone:
                         drone.current_zone.remove_drone(drone)
                     drone.target_zone.add_drone(drone)
@@ -98,28 +93,23 @@ class SimulationEngine:
 
             next_zone = path[current_idx + 1]
 
-            # Find connection
             connection = None
             for neighbor, conn in self.graph.get_neighbors(current_zone):
                 if neighbor == next_zone:
                     connection = conn
                     break
 
-            # Check capacity (including drones currently in transit towards next_zone)
             if next_zone != end_zone:
-                # Count drones occupying or targetting next_zone
                 incoming_drones = sum(
                     1 for d in self.drones 
                     if d.target_zone == next_zone and d.transit_turns_left > 0
                 )
                 if len(next_zone.occupants) + incoming_drones >= next_zone.max_drones:
                     continue
-
-            # Check connection capacity
+            
             if connection and not connection.can_traverse():
                 continue
 
-            # FIX 2 & 3: Movement Logic
             if isinstance(next_zone, RestrictedZone):
                 drone.transit_turns_left = 1
                 drone.target_zone = next_zone
@@ -135,9 +125,7 @@ class SimulationEngine:
                     connection.current_traversals += 1
 
                 step_log[drone.name] = next_zone.name
-
                 if next_zone == end_zone:
                     drone.is_finished = True
                     next_zone.remove_drone(drone)
-
         return step_log

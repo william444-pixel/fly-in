@@ -7,11 +7,14 @@ from simulation import SimulationEngine
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python main.py <map_file_path>")
-        sys.exit(1)
+# 2. Filter sys.argv bash t-jbed l-path d map
+    args = [arg for arg in sys.argv[1:]]
+    # show_capacity = "--capacity-info" in args
+    # if "--capacity-info" not in args:
+    #     print("Usage: python main.py [--capacity-info] <map_file_path>")
+    #     sys.exit(1)
 
-    map_path = sys.argv[1]
+    map_path = args[0]
 
     try:
         parser = MapParser(map_path)
@@ -64,6 +67,15 @@ def main() -> None:
 
         if turn_output:
             print(" ".join(turn_output))
+    #     if show_capacity:
+    # # 1. Zone capacity info
+    #         for z_name, zone in graph.zones.items():
+    #             if len(zone.occupants) > 0:
+    #              print(f"{z_name}: {len(zone.occupants)}/{zone.max_drones} drones")
+    # # 2. Connection capacity info
+    #         for conn in graph.connections:
+    #             if conn.current_traversals > 0:
+    #                 print(f"{conn.zone1.name}-{conn.zone2.name}: {conn.current_traversals}/{conn.max_link_capacity} capacity used")
 
 
 if __name__ == "__main__":
